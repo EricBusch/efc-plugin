@@ -8,6 +8,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * @TEMP - This code is only needed during the 2024-05 updates.
+ *
  * This code disables the "Free Downloads WooCommerce Pro" plugin (WP Enhanced)
  * for a specific WC Product ID.
  *
@@ -79,5 +81,44 @@ function efc_force_display_name_when_displaying_comment_author( string $comment_
 
 add_filter( 'get_comment_author', 'efc_force_display_name_when_displaying_comment_author', 10, 3 );
 
+/**
+ * Remove some fields from the Billings form on the Checkout page.
+ *
+ * This ONLY works on the Shortcode-based Checkout page. If it's a
+ * Block-based Checkout page, this code will absolutely NOT work.
+ *
+ * @see https://woocommerce.com/document/using-the-new-block-based-checkout/
+ *
+ * @param array[] $fields
+ *
+ * @return array
+ * @since 1.0.1
+ */
+function efc_remove_some_fields_from_billing_form_on_checkout_page( array $fields ): array {
 
+	/**
+	 * There's no need to collect a phone number so remove even
+	 * if the cart is valued more than $0.
+	 */
+	unset( $fields['billing']['billing_phone'] );
+
+	/**
+	 * If the cart's total value is 0, then also remove the following fields.
+	 */
+	if ( WC()->cart->cart_contents_total <= 0 ) {
+		unset(
+			$fields['billing']['billing_company'],
+			$fields['billing']['billing_country'],
+			$fields['billing']['billing_address_1'],
+			$fields['billing']['billing_address_2'],
+			$fields['billing']['billing_city'],
+			$fields['billing']['billing_state'],
+			$fields['billing']['billing_postcode']
+		);
+	}
+
+	return $fields;
+}
+
+add_filter( 'woocommerce_checkout_fields', 'efc_remove_some_fields_from_billing_form_on_checkout_page' );
 
