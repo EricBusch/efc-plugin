@@ -117,6 +117,17 @@ function efc_remove_some_fields_from_billing_form_on_checkout_page( array $field
 		);
 	}
 
+	/**
+	 * Add a MailPoet opt-in checkbox just below "Username"
+	 * input field.
+	 */
+	$fields['account']['mailpoet_woocommerce_checkout_optin'] = [
+		'label'         => 'I would like to receive exclusive emails with discounts and product information',
+		'type'          => 'checkbox',
+		'checked_value' => '1',
+		'default'       => '1',
+	];
+
 	return $fields;
 }
 
