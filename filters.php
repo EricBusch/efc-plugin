@@ -3,6 +3,9 @@
 /**
  * Exit if accessed directly.
  */
+
+use MailPoet\API\API;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -93,6 +96,7 @@ add_filter( 'get_comment_author', 'efc_force_display_name_when_displaying_commen
  *
  * @return array
  * @since 1.0.1
+ * @throws Exception
  */
 function efc_remove_some_fields_from_billing_form_on_checkout_page( array $fields ): array {
 
@@ -103,9 +107,16 @@ function efc_remove_some_fields_from_billing_form_on_checkout_page( array $field
 	unset( $fields['billing']['billing_phone'] );
 
 	/**
+	 * There's no need to collect "order notes" as we are not delivering
+	 * anything therefore there's no real reason for the user to leave
+	 * a note about their order.
+	 */
+	unset( $fields['order']['order_comments'] );
+
+	/**
 	 * If the cart's total value is 0, then also remove the following fields.
 	 */
-	if ( WC()->cart->cart_contents_total <= 0 ) {
+	if ( efc_get_cart_total() <= 0 ) {
 		unset(
 			$fields['billing']['billing_company'],
 			$fields['billing']['billing_country'],
@@ -119,17 +130,64 @@ function efc_remove_some_fields_from_billing_form_on_checkout_page( array $field
 
 	/**
 	 * Add a MailPoet opt-in checkbox just below "Username"
-	 * input field.
+	 * input field. This basically does the same thing as the "Opt-in on checkout"
+	 * checkbox on this page /wp-admin/admin.php?page=mailpoet-settings#/woocommerce
+	 * however this adds the checkbox underneath the "Username" field
+	 * and checks the box by default.
+	 *
+	 * This only appears when the user is not yet logged in.
 	 */
-	$fields['account']['mailpoet_woocommerce_checkout_optin'] = [
-		'label'         => 'I would like to receive exclusive emails with discounts and product information',
-		'type'          => 'checkbox',
-		'checked_value' => '1',
-		'default'       => '1',
-	];
+	$fields['account'][ efc_mailpoet_woocommerce_checkout_optin_key() ] = efc_mailpoet_woocommerce_checkout_optin_options();
+
+	/**
+	 * Display the opt-in checkbox if user is already logged in and
+	 * has a status of "unconfirmed" for their subscriber status.
+	 *
+	 * This only appears if:
+	 *  - the MailPoet API class exists
+	 *  - the user is logged in
+	 *  - the user's MailPoet status is "unconfirmed".
+	 *
+	 * @see https://github.com/mailpoet/mailpoet/blob/trunk/doc/api_methods/GetSubscriber.md
+	 */
+	if ( class_exists( API::class ) && is_user_logged_in() ) {
+		try {
+			$current_user = wp_get_current_user();
+			$user_email   = $current_user->user_email;
+			$mailpoet_api = API::MP( 'v1' );
+			try {
+				$subscriber = $mailpoet_api->getSubscriber( $user_email );
+				if ( $subscriber['status'] === 'unconfirmed' ) {
+					$fields['order'][ efc_mailpoet_woocommerce_checkout_optin_key() ] = efc_mailpoet_woocommerce_checkout_optin_options();
+				}
+			} catch ( Exception ) {
+			}
+		} catch ( Exception ) {
+		}
+	}
 
 	return $fields;
 }
 
 add_filter( 'woocommerce_checkout_fields', 'efc_remove_some_fields_from_billing_form_on_checkout_page' );
+
+/**
+ * Change the [Place order] button to say [Download files] when the
+ * value of the cart is $0 (ie. free).
+ *
+ * @param string $text
+ *
+ * @return string
+ * @since 1.0.3
+ */
+function efc_change_place_order_button_text_when_cart_is_free( string $text ): string {
+
+	if ( efc_get_cart_total() <= 0 ) {
+		$text = __( 'Download files', 'efc' );
+	}
+
+	return $text;
+}
+
+add_filter( 'woocommerce_order_button_text', 'efc_change_place_order_button_text_when_cart_is_free' );
 
