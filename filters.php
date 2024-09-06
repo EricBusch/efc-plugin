@@ -29,21 +29,31 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @param int $product_id
  *
  * @return bool
- * @since 1.0.0
+ * @since 1.0.1
  */
 function efc_disable_free_downloads_plugin_for_specific_products( bool $is_free, WC_Product $product, int $product_id ): bool {
 
-	if ( efc_get_env() === 'production' ) {
-		$ids_of_products_we_are_testing_woocommerce_checkout = [ 11483 ];
-	} else {
-		$ids_of_products_we_are_testing_woocommerce_checkout = [ 120 ];
-	}
+	$meta_key = 'eslfc_force_checkout';
 
-	if ( in_array( absint( $product->get_parent_id() ), $ids_of_products_we_are_testing_woocommerce_checkout, true ) ) {
-		return false;
+	$force_checkout = boolval( get_post_meta( $product->get_parent_id(), $meta_key, true ) );
+
+	if ( $force_checkout ) {
+		$is_free = false;
 	}
 
 	return $is_free;
+
+	/**
+	 * if ( efc_get_env() === 'production' ) {
+	 * $ids_of_products_we_are_testing_woocommerce_checkout = [ 11483 ];
+	 * } else {
+	 * $ids_of_products_we_are_testing_woocommerce_checkout = [ 120 ];
+	 * }
+	 *
+	 * if ( in_array( absint( $product->get_parent_id() ), $ids_of_products_we_are_testing_woocommerce_checkout, true ) ) {
+	 * return false;
+	 * }
+	 */
 }
 
 add_filter( 'somdn_is_free', 'efc_disable_free_downloads_plugin_for_specific_products', 10, 3 );
