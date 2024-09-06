@@ -189,17 +189,20 @@ add_filter( 'woocommerce_order_button_text', 'efc_change_place_order_button_text
  * Changes button text from [Add to Cart] to [Download] for products which are
  * being forced through checkout.
  *
+ * @param string $text
  * @param WC_Product $product
  *
  * @return string
  * @since 1.0.5
  */
-function efc_change_add_to_cart_button_text( WC_Product $product ): string {
+function efc_change_add_to_cart_button_text( string $text, WC_Product $product ): string {
 	if ( efc_force_checkout( $product->get_id() ) ) {
-		return __( 'Add to Cart', 'efc' );
+		$text = __( 'Add to Cart', 'efc' );
 	} else {
-		return __( 'Download', 'efc' );
+		$text = __( 'Download', 'efc' );
 	}
+
+	return $text;
 }
 
-add_filter( 'woocommerce_product_single_add_to_cart_text', 'efc_change_add_to_cart_button_text' );
+add_filter( 'woocommerce_product_single_add_to_cart_text', 'efc_change_add_to_cart_button_text', 10, 2 );
