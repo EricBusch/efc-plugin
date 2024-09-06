@@ -33,27 +33,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 function efc_disable_free_downloads_plugin_for_specific_products( bool $is_free, WC_Product $product, int $product_id ): bool {
 
-	$meta_key = 'eslfc_force_checkout';
-
-	$force_checkout = boolval( get_post_meta( $product->get_parent_id(), $meta_key, true ) );
-
-	if ( $force_checkout ) {
+	if ( efc_force_checkout( $product->get_parent_id() ) ) {
 		$is_free = false;
 	}
 
 	return $is_free;
-
-	/**
-	 * if ( efc_get_env() === 'production' ) {
-	 * $ids_of_products_we_are_testing_woocommerce_checkout = [ 11483 ];
-	 * } else {
-	 * $ids_of_products_we_are_testing_woocommerce_checkout = [ 120 ];
-	 * }
-	 *
-	 * if ( in_array( absint( $product->get_parent_id() ), $ids_of_products_we_are_testing_woocommerce_checkout, true ) ) {
-	 * return false;
-	 * }
-	 */
 }
 
 add_filter( 'somdn_is_free', 'efc_disable_free_downloads_plugin_for_specific_products', 10, 3 );
@@ -201,3 +185,21 @@ function efc_change_place_order_button_text_when_cart_is_free( string $text ): s
 
 add_filter( 'woocommerce_order_button_text', 'efc_change_place_order_button_text_when_cart_is_free' );
 
+/**
+ * Changes button text from [Add to Cart] to [Download] for products which are
+ * being forced through checkout.
+ *
+ * @param WC_Product $product
+ *
+ * @return string
+ * @since 1.0.5
+ */
+function efc_change_add_to_cart_button_text( WC_Product $product ): string {
+	if ( efc_force_checkout( $product->get_id() ) ) {
+		return __( 'Add to Cart', 'efc' );
+	} else {
+		return __( 'Download', 'efc' );
+	}
+}
+
+add_filter( 'woocommerce_product_single_add_to_cart_text', 'efc_change_add_to_cart_button_text' );

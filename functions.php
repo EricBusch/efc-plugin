@@ -59,4 +59,16 @@ function efc_mailpoet_woocommerce_checkout_optin_options(): array {
 	];
 }
 
+/**
+ * Checks if we should force user to check out page for this product.
+ *
+ * @param int $product_id The WooCommerce Product ID.
+ *
+ * @return bool
+ */
+function efc_force_checkout( int $product_id ): bool {
+	$meta_key = 'eslfc_force_checkout';
+
+	return boolval( get_post_meta( $product_id, $meta_key, true ) );
+}
 
