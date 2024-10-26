@@ -3,9 +3,35 @@
 /**
  * Exit if accessed directly.
  */
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
+if ( ! defined('ABSPATH')) {
+    exit;
 }
+
+/**
+ * Display Cross-Sell Products underneath main product.
+ *
+ * @return string
+ * @since 1.0.7
+ */
+add_action('woocommerce_after_single_product_summary', function () {
+
+    global $product;
+
+    $cross_sell_ids = $product->get_cross_sell_ids();
+
+    if (count($cross_sell_ids) < 1) {
+        return;
+    }
+
+    $ids = implode(', ', $cross_sell_ids);
+
+    $html = '<div style="clear:left">';
+    $html .= '<h3>You might be interested in...</h3>';
+    $html .= do_shortcode('[products limit="3" columns="3" ids="'.$ids.'"]');
+    $html .= '</div>';
+
+    echo $html;
+}, 5);
 
 /**
  * The following 4 "add_action" calls (which have been commented out) all
