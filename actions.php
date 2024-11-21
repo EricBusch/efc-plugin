@@ -8,6 +8,24 @@ if ( ! defined('ABSPATH')) {
 }
 
 /**
+ * Remove the sticky WooCommerce header on the product add and edit pages.
+ */
+add_action('admin_head', function () {
+
+    global $pagenow;
+
+    if ( ! is_admin()) {
+        return;
+    }
+
+    if ( ! in_array($pagenow, ['post-new.php', 'post.php'])) {
+        return;
+    }
+
+    echo '<style>.woocommerce-layout__header-wrapper{display:none !important;}</style>';
+});
+
+/**
  * Display Cross-Sell Products underneath main product.
  *
  * @return string
