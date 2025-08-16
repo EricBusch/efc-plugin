@@ -24,14 +24,18 @@ if ( ! defined( 'ABSPATH' ) ) {
  * This code can be removed once the "Free Downloads WooCommerce Pro" plugin
  * is deactivated and uninstalled.
  *
- * @param bool $is_free
- * @param WC_Product $product
- * @param int $product_id
+ * @param  bool  $is_free
+ * @param  WC_Product  $product
+ * @param  int  $product_id
  *
  * @return bool
  * @since 1.0.1
  */
-function efc_disable_free_downloads_plugin_for_specific_products( bool $is_free, WC_Product $product, int $product_id ): bool {
+function efc_disable_free_downloads_plugin_for_specific_products(
+	bool $is_free,
+	WC_Product $product,
+	int $product_id
+): bool {
 
 	if ( efc_force_checkout( $product->get_parent_id() ) ) {
 		$is_free = false;
@@ -58,14 +62,18 @@ add_filter( 'somdn_is_product_free_for_user', 'efc_disable_free_downloads_plugin
  * This expects that the commenter is actually in our "users" database table and
  * has an account on our site.
  *
- * @param string $comment_author The comment author's username.
- * @param string $comment_id The comment ID as a numeric string.
- * @param WP_Comment $comment The comment object.
+ * @param  string  $comment_author  The comment author's username.
+ * @param  string  $comment_id  The comment ID as a numeric string.
+ * @param  WP_Comment  $comment  The comment object.
  *
  * @return string
  * @since 1.0.0
  */
-function efc_force_display_name_when_displaying_comment_author( string $comment_author, string $comment_id, WP_Comment $comment ): string {
+function efc_force_display_name_when_displaying_comment_author(
+	string $comment_author,
+	string $comment_id,
+	WP_Comment $comment
+): string {
 
 	$user = ! empty( $comment->user_id ) ? get_userdata( $comment->user_id ) : false;
 
@@ -86,7 +94,7 @@ add_filter( 'get_comment_author', 'efc_force_display_name_when_displaying_commen
  *
  * @see https://woocommerce.com/document/using-the-new-block-based-checkout/
  *
- * @param array[] $fields
+ * @param  array[]  $fields
  *
  * @return array
  * @since 1.0.1
@@ -169,7 +177,7 @@ add_filter( 'woocommerce_checkout_fields', 'efc_remove_some_fields_from_billing_
  * Change the [Place order] button to say [Download files] when the
  * value of the cart is $0 (ie. free).
  *
- * @param string $text
+ * @param  string  $text
  *
  * @return string
  * @since 1.0.3
@@ -189,8 +197,8 @@ add_filter( 'woocommerce_order_button_text', 'efc_change_place_order_button_text
  * Changes button text from [Add to Cart] to [Download] for products which are
  * being forced through checkout.
  *
- * @param string $text
- * @param WC_Product $product
+ * @param  string  $text
+ * @param  WC_Product  $product
  *
  * @return string
  * @since 1.0.5
@@ -206,3 +214,22 @@ function efc_change_add_to_cart_button_text( string $text, WC_Product $product )
 }
 
 add_filter( 'woocommerce_product_single_add_to_cart_text', 'efc_change_add_to_cart_button_text', 10, 2 );
+
+/**
+ * Modify WooCommerce product posttype arguments to add support for revisions.
+ *
+ * This function adds 'revisions' to the supports array of the WooCommerce product post type,
+ * allowing products to have revision tracking enabled.
+ *
+ * @param  array  $args  The arguments for registering the product post type.
+ *
+ * @return array  Modified arguments with revisions support added.
+ * @since 1.0.9
+ */
+function efc_modify_product_post_type( $args ): array {
+	$args['supports'][] = 'revisions';
+
+	return $args;
+}
+
+add_filter( 'woocommerce_register_post_type_product', 'efc_modify_product_post_type' );
