@@ -30,6 +30,10 @@ function efc_get_cart_total(): float {
 		return 0;
 	}
 
+	if ( is_null( WC()->cart ) ) {
+		return 0;
+	}
+
 	return WC()->cart->get_cart_contents_total();
 }
 
