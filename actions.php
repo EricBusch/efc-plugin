@@ -73,123 +73,34 @@ add_action( 'woocommerce_before_single_product_summary', function () {
 */
 
 /**
- * Plugin snippet: show WooCommerce featured products first on shop & category/tag pages
- * Paste into a plugin file or your theme's functions.php
+ * Hook to modify product queries to show featured products first.
  *
- * https://chatgpt.com/share/68b8427d-937c-8007-b2ca-54b6debc9670
+ * This action hooks into 'pre_get_posts' to attach our custom posts_clauses filter
+ * for product queries on shop and category pages.
+ *
+ * @param WP_Query $query The WP_Query instance.
+ * @since 1.0.13
  */
-add_action( 'pre_get_posts', function ( $query ) {
-
-	// only modify frontend main queries
+add_action( 'pre_get_posts', function ( WP_Query $query ) {
+	
+	// Only apply to main queries (not admin, not sub-queries)
 	if ( is_admin() || ! $query->is_main_query() ) {
 		return;
 	}
-	
-	// ensure WooCommerce is active and required functions exist
-	if ( ! class_exists( 'WooCommerce' ) || ! function_exists( 'wc_get_featured_product_ids' ) ) {
-		error_log( 'EFC Plugin: WooCommerce not active or wc_get_featured_product_ids function not found' );
-		return;
-	}
-	
-	// target shop, product category and product tag archives
-	if ( ! ( is_shop() || is_product_category() || is_product_tag() ) ) {
+
+	// Only apply to product queries
+	if ( ! isset( $query->query_vars['post_type'] ) || $query->query_vars['post_type'] !== 'product' ) {
 		return;
 	}
 
-	// get featured product IDs with error handling
-	try {
-		$featured_ids = wc_get_featured_product_ids();
-	} catch ( Exception $e ) {
-		error_log( 'EFC Plugin: Error getting featured product IDs - ' . $e->getMessage() );
+	// Only apply to shop page and product category pages
+	if ( ! ( is_shop() || is_product_category() ) ) {
 		return;
 	}
 
-	// sanitize and dedupe
-	$featured_ids = array_map( 'absint', array_unique( (array) $featured_ids ) );
-
-	if ( empty( $featured_ids ) ) {
-		return; // nothing to do
-	}
-
-	// store on query so posts_clauses can see it
-	$query->set( 'efc_featured_product_ids', $featured_ids );
-
-	// attach clauses filter with higher priority to prevent conflicts
-	add_filter( 'posts_clauses', 'efc_featured_products_posts_clauses', 30, 2 );
-} );
-
-/**
- * Modifies WordPress query clauses to prioritize featured products.
- *
- * This function modifies the ORDER BY clause of WooCommerce product queries
- * to display featured products first on shop pages, product category pages,
- * and product tag pages. It only operates when featured product IDs have been
- * set on the query via the 'efc_featured_product_ids' parameter.
- *
- * @param array    $clauses Array of query clauses including 'orderby', 'where', etc.
- * @param WP_Query $query   The WordPress query object being modified.
- * @return array Modified clauses array with updated ORDER BY to prioritize featured products.
- */
-function efc_featured_products_posts_clauses( $clauses, $query ) {
-
-	// validate input parameters
-	if ( ! is_array( $clauses ) || ! is_object( $query ) ) {
-		error_log( 'EFC Plugin: Invalid parameters passed to efc_featured_products_posts_clauses' );
-		return is_array( $clauses ) ? $clauses : [];
-	}
-
-	// only alter if our pre_get_posts set the featured IDs on this specific query
-	$featured = $query->get( 'efc_featured_product_ids' );
-
-	if ( empty( $featured ) || ! is_array( $featured ) ) {
-		return $clauses;
-	}
-
-	global $wpdb;
-
-	// validate wpdb is available
-	if ( ! isset( $wpdb ) || ! is_object( $wpdb ) ) {
-		error_log( 'EFC Plugin: WordPress database object not available' );
-		return $clauses;
-	}
-
-	// ensure integers and build list with validation
-	$featured = array_map( 'absint', array_filter( $featured, 'is_numeric' ) );
-	$featured = array_filter( $featured ); // remove zeros
+	// Attach our custom posts_clauses filter
+	add_filter( 'posts_clauses', 'efc_featured_products_posts_clauses', 10, 2 );
 	
-	if ( empty( $featured ) ) {
-		return $clauses;
-	}
-
-	// limit the number of IDs to prevent extremely long queries (max 100)
-	if ( count( $featured ) > 100 ) {
-		$featured = array_slice( $featured, 0, 100 );
-		error_log( 'EFC Plugin: Featured products list truncated to 100 items for performance' );
-	}
-
-	$ids_list = implode( ',', $featured );
-
-	if ( empty( $ids_list ) ) {
-		return $clauses;
-	}
-
-	// ensure orderby key exists in clauses
-	if ( ! isset( $clauses['orderby'] ) ) {
-		$clauses['orderby'] = '';
-	}
-
-	// Put featured products first. We prepend this priority to any existing ORDER BY.
-	// (wp_posts.ID IN (1,2,3)) returns 1 for featured products, so DESC places them before others.
-	$featured_order = "({$wpdb->posts}.ID IN ($ids_list)) DESC";
-
-	if ( ! empty( $clauses['orderby'] ) ) {
-		$clauses['orderby'] = $featured_order . ', ' . $clauses['orderby'];
-	} else {
-		// fallback ordering if none provided
-		$clauses['orderby'] = $featured_order . ", {$wpdb->posts}.post_date DESC";
-	}
-
-	return $clauses;
-}
+}, 20 );
 
 
