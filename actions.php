@@ -88,36 +88,13 @@ add_action( 'pre_get_posts', function ( WP_Query $query ) {
 		return;
 	}
 
-	// Only apply to product queries
-	if ( ! isset( $query->query_vars['post_type'] ) || $query->query_vars['post_type'] !== 'product' ) {
-		return;
-	}
+//	 Only apply to product queries
+//	if ( ! isset( $query->query_vars['post_type'] ) || $query->query_vars['post_type'] !== 'product' ) {
+//		return;
+//	}
 
-	// Check if this is a shop page or product category page using query variables
-	// instead of conditional functions which may not work reliably during pre_get_posts
-	$is_shop_page = false;
-	$is_category_page = false;
-	
-	// Check for shop page: main product query without taxonomy restrictions
-	if ( empty( $query->query_vars['taxonomy'] ) && empty( $query->query_vars['tax_query'] ) ) {
-		$is_shop_page = true;
-	}
-	
-	// Check for category page: has taxonomy query for product_cat
-	if ( ! empty( $query->query_vars['taxonomy'] ) && $query->query_vars['taxonomy'] === 'product_cat' ) {
-		$is_category_page = true;
-	} elseif ( ! empty( $query->query_vars['tax_query'] ) ) {
-		// Check tax_query array for product_cat taxonomy
-		foreach ( $query->query_vars['tax_query'] as $tax_query_item ) {
-			if ( is_array( $tax_query_item ) && isset( $tax_query_item['taxonomy'] ) && $tax_query_item['taxonomy'] === 'product_cat' ) {
-				$is_category_page = true;
-				break;
-			}
-		}
-	}
-	
 	// Only apply to shop page and product category pages
-	if ( ! ( $is_shop_page || $is_category_page ) ) {
+	if ( ! ( is_shop() || is_product_category() ) ) {
 		return;
 	}
 
