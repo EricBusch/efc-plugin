@@ -84,14 +84,25 @@ add_action( 'pre_get_posts', function ( $query ) {
 	if ( is_admin() || ! $query->is_main_query() ) {
 		return;
 	}
-
+	
+	// ensure WooCommerce is active and required functions exist
+	if ( ! class_exists( 'WooCommerce' ) || ! function_exists( 'wc_get_featured_product_ids' ) ) {
+		error_log( 'EFC Plugin: WooCommerce not active or wc_get_featured_product_ids function not found' );
+		return;
+	}
+	
 	// target shop, product category and product tag archives
 	if ( ! ( is_shop() || is_product_category() || is_product_tag() ) ) {
 		return;
 	}
 
-	// get featured product IDs (use WC helper if available)
-	$featured_ids = wc_get_featured_product_ids();
+	// get featured product IDs with error handling
+	try {
+		$featured_ids = wc_get_featured_product_ids();
+	} catch ( Exception $e ) {
+		error_log( 'EFC Plugin: Error getting featured product IDs - ' . $e->getMessage() );
+		return;
+	}
 
 	// sanitize and dedupe
 	$featured_ids = array_map( 'absint', array_unique( (array) $featured_ids ) );
@@ -103,8 +114,8 @@ add_action( 'pre_get_posts', function ( $query ) {
 	// store on query so posts_clauses can see it
 	$query->set( 'efc_featured_product_ids', $featured_ids );
 
-	// attach clauses filter (the filter inspects the query and only alters when that var exists)
-	add_filter( 'posts_clauses', 'efc_featured_products_posts_clauses', 20, 2 );
+	// attach clauses filter with higher priority to prevent conflicts
+	add_filter( 'posts_clauses', 'efc_featured_products_posts_clauses', 30, 2 );
 } );
 
 /**
@@ -121,6 +132,12 @@ add_action( 'pre_get_posts', function ( $query ) {
  */
 function efc_featured_products_posts_clauses( $clauses, $query ) {
 
+	// validate input parameters
+	if ( ! is_array( $clauses ) || ! is_object( $query ) ) {
+		error_log( 'EFC Plugin: Invalid parameters passed to efc_featured_products_posts_clauses' );
+		return is_array( $clauses ) ? $clauses : [];
+	}
+
 	// only alter if our pre_get_posts set the featured IDs on this specific query
 	$featured = $query->get( 'efc_featured_product_ids' );
 
@@ -130,12 +147,35 @@ function efc_featured_products_posts_clauses( $clauses, $query ) {
 
 	global $wpdb;
 
-	// ensure integers and build list
-	$featured = array_map( 'absint', $featured );
+	// validate wpdb is available
+	if ( ! isset( $wpdb ) || ! is_object( $wpdb ) ) {
+		error_log( 'EFC Plugin: WordPress database object not available' );
+		return $clauses;
+	}
+
+	// ensure integers and build list with validation
+	$featured = array_map( 'absint', array_filter( $featured, 'is_numeric' ) );
+	$featured = array_filter( $featured ); // remove zeros
+	
+	if ( empty( $featured ) ) {
+		return $clauses;
+	}
+
+	// limit the number of IDs to prevent extremely long queries (max 100)
+	if ( count( $featured ) > 100 ) {
+		$featured = array_slice( $featured, 0, 100 );
+		error_log( 'EFC Plugin: Featured products list truncated to 100 items for performance' );
+	}
+
 	$ids_list = implode( ',', $featured );
 
 	if ( empty( $ids_list ) ) {
 		return $clauses;
+	}
+
+	// ensure orderby key exists in clauses
+	if ( ! isset( $clauses['orderby'] ) ) {
+		$clauses['orderby'] = '';
 	}
 
 	// Put featured products first. We prepend this priority to any existing ORDER BY.
