@@ -103,4 +103,27 @@ add_action( 'pre_get_posts', function ( WP_Query $query ) {
 	
 }, 20 );
 
+/**
+ * Disables the setting of Cookies which function to pre-populate the comment form's
+ * input fields with a commenter's previously supplied name & email address.
+ *
+ * @since 1.0.16
+ */
+function efc_disable_comment_cookies() {
+	remove_action( 'set_comment_cookies', 'wp_set_comment_cookies' );
+}
 
+add_action( 'init', 'efc_disable_comment_cookies' );
+
+/**
+ * This modifies the "Recent Product Reviews" widget supplied by WooCommerce.
+ *
+ * By default, the widget just display the product image, product name, start rating and the author name.
+ *
+ * This appends the actual review to the bottom of each reviewed item.
+ *
+ * @since 1.0.16
+ */
+add_action( 'woocommerce_widget_product_review_item_end', function ( $args ) {
+	printf( '<p class="eslfc_widget_review_content">%s</p>', esc_html( $args['comment']->comment_content ) );
+} );

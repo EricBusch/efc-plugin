@@ -233,3 +233,18 @@ function efc_modify_product_post_type( $args ): array {
 }
 
 add_filter( 'woocommerce_register_post_type_product', 'efc_modify_product_post_type' );
+
+/**
+ * This modifies the list of email recipients for comment notifications.
+ *
+ * Overrides the list of comment moderation recipients.
+ *
+ * @since 1.0.16
+ */
+add_filter( 'comment_moderation_recipients', function ( $emails, $comment_id ) {
+	return [
+		'hello@eslflashcards.com',
+		'eric@eslflashcards.com',
+	];
+}, 20, 2 );
+
