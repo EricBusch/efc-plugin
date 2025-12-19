@@ -24,9 +24,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  * This code can be removed once the "Free Downloads WooCommerce Pro" plugin
  * is deactivated and uninstalled.
  *
- * @param  bool  $is_free
- * @param  WC_Product  $product
- * @param  int  $product_id
+ * @param bool $is_free
+ * @param WC_Product $product
+ * @param int $product_id
  *
  * @return bool
  * @since 1.0.1
@@ -62,9 +62,9 @@ add_filter( 'somdn_is_product_free_for_user', 'efc_disable_free_downloads_plugin
  * This expects that the commenter is actually in our "users" database table and
  * has an account on our site.
  *
- * @param  string  $comment_author  The comment author's username.
- * @param  string  $comment_id  The comment ID as a numeric string.
- * @param  WP_Comment  $comment  The comment object.
+ * @param string $comment_author The comment author's username.
+ * @param string $comment_id The comment ID as a numeric string.
+ * @param WP_Comment $comment The comment object.
  *
  * @return string
  * @since 1.0.0
@@ -94,7 +94,7 @@ add_filter( 'get_comment_author', 'efc_force_display_name_when_displaying_commen
  *
  * @see https://woocommerce.com/document/using-the-new-block-based-checkout/
  *
- * @param  array[]  $fields
+ * @param array[] $fields
  *
  * @return array
  * @since 1.0.1
@@ -177,7 +177,7 @@ add_filter( 'woocommerce_checkout_fields', 'efc_remove_some_fields_from_billing_
  * Change the [Place order] button to say [Download files] when the
  * value of the cart is $0 (ie. free).
  *
- * @param  string  $text
+ * @param string $text
  *
  * @return string
  * @since 1.0.3
@@ -197,8 +197,8 @@ add_filter( 'woocommerce_order_button_text', 'efc_change_place_order_button_text
  * Changes button text from [Add to Cart] to [Download] for products which are
  * being forced through checkout.
  *
- * @param  string  $text
- * @param  WC_Product  $product
+ * @param string $text
+ * @param WC_Product $product
  *
  * @return string
  * @since 1.0.5
@@ -221,7 +221,7 @@ add_filter( 'woocommerce_product_single_add_to_cart_text', 'efc_change_add_to_ca
  * This function adds 'revisions' to the supports array of the WooCommerce product post type,
  * allowing products to have revision tracking enabled.
  *
- * @param  array  $args  The arguments for registering the product post type.
+ * @param array $args The arguments for registering the product post type.
  *
  * @return array  Modified arguments with revisions support added.
  * @since 1.0.9
@@ -247,4 +247,47 @@ add_filter( 'comment_moderation_recipients', function ( $emails, $comment_id ) {
 		'eric@eslflashcards.com',
 	];
 }, 20, 2 );
+
+
+/**
+ * Filter the Rank Math product entity to add a default size if one is missing.
+ *
+ * This ensures that WooCommerce products have a 'size' property in their
+ * rich snippet data, which is sometimes required by external platforms.
+ *
+ * @see https://chatgpt.com/share/6945746c-9d48-8007-af73-02de4263b5ce
+ * @see https://chatgpt.com/share/69457f35-53b0-8007-b366-471a9d766328
+ *
+ * @param array $entity The product entity data.
+ *
+ * @return array Modified product entity data.
+ * @since 1.0.18
+ */
+add_action( 'rank_math/json_ld', function ( $data ) {
+
+	$attr  = 'size';
+	$value = 'One Size';
+
+	if ( empty( $data['richSnippet'] ) ) {
+		return $data;
+	}
+
+	if ( empty( $data['richSnippet']['hasVariant'] ) ) {
+		return $data;
+	}
+
+	foreach ( $data['richSnippet']['hasVariant'] as $key => $variant ) {
+
+		if ( $variant['@type'] !== 'Product' ) {
+			continue;
+		}
+
+		if ( empty( $variant[ $attr ] ) ) {
+			$data['richSnippet']['hasVariant'][ $key ][ $attr ] = $value;
+		}
+	}
+
+	return $data;
+
+}, 999 );
 
