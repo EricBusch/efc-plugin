@@ -79,10 +79,11 @@ add_action( 'woocommerce_before_single_product_summary', function () {
  * for product queries on shop and category pages.
  *
  * @param WP_Query $query The WP_Query instance.
+ *
  * @since 1.0.13
  */
 add_action( 'pre_get_posts', function ( WP_Query $query ) {
-	
+
 	// Only apply to main queries (not admin, not sub-queries)
 	if ( is_admin() || ! $query->is_main_query() ) {
 		return;
@@ -100,7 +101,7 @@ add_action( 'pre_get_posts', function ( WP_Query $query ) {
 
 	// Attach our custom posts_clauses filter
 	add_filter( 'posts_clauses', 'efc_featured_products_posts_clauses', 10, 2 );
-	
+
 }, 20 );
 
 /**
@@ -169,3 +170,39 @@ add_action( 'rank_math/json_ld', function ( $data ) {
 	return $data;
 
 }, 999 );
+
+
+/**
+ * Remove the default WooCommerce product title from the shop loop.
+ *
+ * @since 1.0.20
+ */
+function efc_remove_default_product_title_hook(): void {
+	remove_action( 'woocommerce_shop_loop_item_title', 'woocommerce_template_loop_product_title' );
+}
+
+add_action( 'init', 'efc_remove_default_product_title_hook' );
+
+/**
+ * Reinsert the default WooCommerce product title with conditional heading tags.
+ *
+ * This function echoes the product title wrapped in either h4 or h2 tags
+ * based on whether the current loop is within a shortcode.
+ *
+ * Products displayed in the sidebar widgets are rendered via shortcodes that's why
+ * we are targetting shortcodes.
+ *
+ * @since 1.0.20
+ */
+function efc_reinsert_default_product_title_hook(): void {
+
+	$class = apply_filters( 'woocommerce_product_loop_title_classes', 'woocommerce-loop-product__title' );
+
+	if ( wc_get_loop_prop( 'is_shortcode' ) ) {
+		echo '<h4 class="' . esc_attr( $class ) . '">' . get_the_title() . '</h4>';
+	} else {
+		echo '<h2 class="' . esc_attr( $class ) . '">' . get_the_title() . '</h2>';
+	}
+}
+
+add_action( 'woocommerce_shop_loop_item_title', 'efc_reinsert_default_product_title_hook' );
