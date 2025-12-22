@@ -127,3 +127,45 @@ add_action( 'init', 'efc_disable_comment_cookies' );
 add_action( 'woocommerce_widget_product_review_item_end', function ( $args ) {
 	printf( '<p class="eslfc_widget_review_content">%s</p>', esc_html( $args['comment']->comment_content ) );
 } );
+
+/**
+ * Filter the Rank Math product entity to add a default size if one is missing.
+ *
+ * This ensures that WooCommerce products have a 'size' property in their
+ * rich snippet data, which is sometimes required by external platforms.
+ *
+ * @see https://chatgpt.com/share/6945746c-9d48-8007-af73-02de4263b5ce
+ * @see https://chatgpt.com/share/69457f35-53b0-8007-b366-471a9d766328
+ *
+ * @param array $entity The product entity data.
+ *
+ * @return array Modified product entity data.
+ * @since 1.0.18
+ */
+add_action( 'rank_math/json_ld', function ( $data ) {
+
+	$attr  = 'size';
+	$value = 'One Size';
+
+	if ( empty( $data['richSnippet'] ) ) {
+		return $data;
+	}
+
+	if ( empty( $data['richSnippet']['hasVariant'] ) ) {
+		return $data;
+	}
+
+	foreach ( $data['richSnippet']['hasVariant'] as $key => $variant ) {
+
+		if ( $variant['@type'] !== 'Product' ) {
+			continue;
+		}
+
+		if ( empty( $variant[ $attr ] ) ) {
+			$data['richSnippet']['hasVariant'][ $key ][ $attr ] = $value;
+		}
+	}
+
+	return $data;
+
+}, 999 );

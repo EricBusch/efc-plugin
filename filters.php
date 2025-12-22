@@ -248,46 +248,24 @@ add_filter( 'comment_moderation_recipients', function ( $emails, $comment_id ) {
 	];
 }, 20, 2 );
 
+/**
+ * Change the start of the widget title from h2 to h3.
+ *
+ * @since 1.0.19
+ *
+ * @return string
+ */
+add_filter( 'generate_start_widget_title', function () {
+	return '<h3 class="widget-title">';
+} );
 
 /**
- * Filter the Rank Math product entity to add a default size if one is missing.
+ * Change the end of the widget titlefrom h2 to h3.
  *
- * This ensures that WooCommerce products have a 'size' property in their
- * rich snippet data, which is sometimes required by external platforms.
+ * @since 1.0.19
  *
- * @see https://chatgpt.com/share/6945746c-9d48-8007-af73-02de4263b5ce
- * @see https://chatgpt.com/share/69457f35-53b0-8007-b366-471a9d766328
- *
- * @param array $entity The product entity data.
- *
- * @return array Modified product entity data.
- * @since 1.0.18
+ * @return string
  */
-add_action( 'rank_math/json_ld', function ( $data ) {
-
-	$attr  = 'size';
-	$value = 'One Size';
-
-	if ( empty( $data['richSnippet'] ) ) {
-		return $data;
-	}
-
-	if ( empty( $data['richSnippet']['hasVariant'] ) ) {
-		return $data;
-	}
-
-	foreach ( $data['richSnippet']['hasVariant'] as $key => $variant ) {
-
-		if ( $variant['@type'] !== 'Product' ) {
-			continue;
-		}
-
-		if ( empty( $variant[ $attr ] ) ) {
-			$data['richSnippet']['hasVariant'][ $key ][ $attr ] = $value;
-		}
-	}
-
-	return $data;
-
-}, 999 );
-
+add_filter( 'generate_end_widget_title', function () {
+	return '</h3>';
+} );
