@@ -72,7 +72,7 @@ add_filter( 'somdn_is_product_free_for_user', 'efc_disable_free_downloads_plugin
 function efc_force_display_name_when_displaying_comment_author(
 	string $comment_author,
 	string $comment_id,
-	WP_Comment $comment
+	?WP_Comment $comment
 ): string {
 
 	$user = ! empty( $comment->user_id ) ? get_userdata( $comment->user_id ) : false;
@@ -251,9 +251,8 @@ add_filter( 'comment_moderation_recipients', function ( $emails, $comment_id ) {
 /**
  * Change the start of the widget title from h2 to h3.
  *
- * @since 1.0.19
- *
  * @return string
+ * @since 1.0.19
  */
 add_filter( 'generate_start_widget_title', function () {
 	return '<h3 class="widget-title">';
@@ -262,10 +261,32 @@ add_filter( 'generate_start_widget_title', function () {
 /**
  * Change the end of the widget titlefrom h2 to h3.
  *
- * @since 1.0.19
- *
  * @return string
+ * @since 1.0.19
  */
 add_filter( 'generate_end_widget_title', function () {
 	return '</h3>';
 } );
+
+/**
+ * Adds an alt attribute to Gravatar images if one is not already set.
+ *
+ * This ensures that avatars have a descriptive alt text, which is better for accessibility & SEO.
+ * It defaults to "Avatar for [Comment Author Name]".
+ *
+ * @param array $args The arguments passed to the get_avatar_data filter.
+ * @param mixed $id_or_email The user identifier or email.
+ *
+ * @return array Modified arguments with the alt attribute set.
+ *
+ * @since 1.0.21
+ */
+function efc_add_alt_attribute_to_gravatar_images( array $args, mixed $id_or_email ): array {
+	if ( empty( $args['alt'] ) ) {
+		$args['alt'] = esc_attr( 'Avatar for ' . get_comment_author() ); // Uses comment author's name
+	}
+
+	return $args;
+}
+
+add_filter( 'pre_get_avatar_data', 'efc_add_alt_attribute_to_gravatar_images', 10, 2 );
