@@ -290,3 +290,38 @@ function efc_add_alt_attribute_to_gravatar_images( array $args, mixed $id_or_ema
 }
 
 add_filter( 'pre_get_avatar_data', 'efc_add_alt_attribute_to_gravatar_images', 10, 2 );
+
+/**
+ * Changes the product category archive title to a custom title based on the category slug.
+ *
+ * @param string $title The existing title.
+ *
+ * @return string Modified title if a custom one is defined, otherwise the original title.
+ * @since 1.0.22
+ */
+function efc_change_product_category_archive_title( string $title ): string {
+
+	if ( ! is_product_category() ) {
+		return $title;
+	}
+
+	$term = get_queried_object();
+
+	$custom_titles = [
+		'alphabet'   => 'Free Printable Alphabet Flashcards',
+		'phonics'    => 'Free Printable Phonics Flashcards',
+		'vocabulary' => 'Free Printable Vocabulary Flashcards',
+		'grammar'    => 'Free Printable Grammar Flashcards',
+		'worksheets' => 'Printable ESL Worksheets',
+		'extras'     => 'Extra Worksheets and Flashcards',
+	];
+
+	if ( isset( $custom_titles[ $term->slug ] ) ) {
+		$title = $custom_titles[ $term->slug ];
+	}
+
+	return $title;
+}
+
+add_filter( 'single_term_title', 'efc_change_product_category_archive_title' );
+
