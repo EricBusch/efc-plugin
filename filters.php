@@ -194,26 +194,34 @@ function efc_change_place_order_button_text_when_cart_is_free( string $text ): s
 add_filter( 'woocommerce_order_button_text', 'efc_change_place_order_button_text_when_cart_is_free' );
 
 /**
- * Changes button text from [Add to Cart] to [Download] for products which are
- * being forced through checkout.
+ * Changes the [Add to Cart] button text based on specific product conditions.
  *
- * @param string $text
- * @param WC_Product $product
+ * This function modifies the text for both the single product page and product archives.
+ *  - If the product is forced through checkout, it shows "Add to Cart".
+ *  - If the product is external/affiliate, it shows "Buy this".
+ *  - For all other products (assumed to be free downloads), it shows "Download".
  *
- * @return string
+ * @param string $text The existing button text.
+ * @param WC_Product $product The product object.
+ *
+ * @return string The modified button text.
  * @since 1.0.5
  */
 function efc_change_add_to_cart_button_text( string $text, WC_Product $product ): string {
+
 	if ( efc_force_checkout( $product->get_id() ) ) {
-		$text = __( 'Add to Cart', 'efc' );
-	} else {
-		$text = __( 'Download', 'efc' );
+		return esc_html__( 'Add to Cart', 'efc' );
 	}
 
-	return $text;
+	if ( $product->is_type( 'external' ) ) {
+		return esc_html__( 'Buy this', 'efc' );
+	}
+
+	return esc_html__( 'Download', 'efc' );
 }
 
 add_filter( 'woocommerce_product_single_add_to_cart_text', 'efc_change_add_to_cart_button_text', 10, 2 );
+add_filter( 'woocommerce_product_add_to_cart_text', 'efc_change_add_to_cart_button_text', 10, 2 );
 
 /**
  * Modify WooCommerce product posttype arguments to add support for revisions.
